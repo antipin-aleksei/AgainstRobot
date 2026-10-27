@@ -66,7 +66,7 @@ struct HomeView: View {
                 case .premise:
                     PremiseView(session: session) {
                         session.beginAdventure()
-                        path.append(.game)
+                        path = [.game]
                     }
                 case .game:
                     GameView(session: session) { path = [] }

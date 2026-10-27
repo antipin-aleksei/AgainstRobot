@@ -99,7 +99,7 @@ final class AgainstRobotUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Это пример истории. Сохранения появятся позже."].exists)
         app.buttons["game.home"].tap()
         app.buttons["resumeGame"].tap()
-        XCTAssertTrue(app.staticTexts[action].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label == %@", action)).firstMatch.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["game.roll"].exists)
         capture(app, "06-active-adventure-preserved-after-history")
         app.buttons["game.hero"].tap()
