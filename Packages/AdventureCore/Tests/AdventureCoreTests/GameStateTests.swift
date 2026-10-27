@@ -196,6 +196,46 @@ final class GameStateTests: XCTestCase {
         }
     }
 
+    func testDecodedSelectionRejectsGameplayHistoryAndNoninitialScene() throws {
+        var state = try makeState()
+        let initial = state
+        try state.apply(.begin)
+        try state.apply(.narrate(Message(speaker: .player, text: "Осматриваю дверь")))
+        state.phase = .selectingPremise
+        XCTAssertThrowsError(try JSONDecoder().decode(GameState.self, from: JSONEncoder().encode(state)))
+
+        state = initial
+        try state.apply(.begin)
+        let request = CheckRequest(sceneID: state.sceneID, ability: .agility, difficulty: 12)
+        try state.apply(.requestCheck(request))
+        try state.apply(.resolveCheck(request.id, face: 14, resultID: ID()))
+        state.phase = .selectingPremise
+        XCTAssertThrowsError(try JSONDecoder().decode(GameState.self, from: JSONEncoder().encode(state)))
+
+        state = initial
+        state.sceneID = state.adventure.scenes[1].id
+        XCTAssertThrowsError(try JSONDecoder().decode(GameState.self, from: JSONEncoder().encode(state)))
+        XCTAssertEqual(try JSONDecoder().decode(GameState.self, from: JSONEncoder().encode(initial)), initial)
+    }
+
+    func testDecodedCombatRejectsReorderedScenarioEnemiesAndTurnOrder() throws {
+        var state = try AdventureFixtures.newSession(name: "Мира")
+        try state.apply(.begin)
+        try state.apply(.move(state.adventure.scenes[2].id))
+        try state.apply(.startCombat(ID()))
+        let combat = try XCTUnwrap(state.combat)
+        let reversed = Array(combat.enemies.reversed())
+        for order in [combat.turnOrder, [.hero(state.hero.id)] + reversed.map({ .enemy($0.id) })] {
+            state.combat = Combat(id: combat.id, sceneID: state.sceneID, enemies: reversed, turnOrder: order, turnIndex: 0)
+            XCTAssertThrowsError(try JSONDecoder().decode(GameState.self, from: JSONEncoder().encode(state)))
+        }
+        state.combat = Combat(id: combat.id, sceneID: state.sceneID, enemies: combat.enemies,
+                              turnOrder: [.hero(state.hero.id)] + reversed.map({ .enemy($0.id) }), turnIndex: 0)
+        XCTAssertThrowsError(try JSONDecoder().decode(GameState.self, from: JSONEncoder().encode(state)))
+        state.combat = combat
+        XCTAssertEqual(try JSONDecoder().decode(GameState.self, from: JSONEncoder().encode(state)), state)
+    }
+
 }
 
 func makeState() throws -> GameState {

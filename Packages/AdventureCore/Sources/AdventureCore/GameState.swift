@@ -83,6 +83,10 @@ public struct GameState: Codable, Equatable {
         try require(unique(rolls.map(\.id)) && unique(rolls.map { $0.request.id }) && rolls.allSatisfy {
             validRequest($0.request) && (1...20).contains($0.face) && $0.bonus == hero.abilities.bonus(for: $0.request.ability)
         }, "Invalid roll history")
+        if phase == .selectingPremise {
+            try require(messages.isEmpty && rolls.isEmpty && sceneID == adventure.scenes.first?.id,
+                        "Pre-start session contains gameplay progress")
+        }
         try require((phase == .awaitingRoll) == (pendingCheck != nil), "Pending check phase mismatch")
         if let request = pendingCheck {
             try require(validRequest(request) && request.sceneID == sceneID && !rolls.contains { $0.request.id == request.id }, "Invalid pending check")
@@ -90,7 +94,7 @@ public struct GameState: Codable, Equatable {
         try require((phase == .combat) == (combat != nil), "Combat phase mismatch")
         if let combat = combat {
             try require(combat.sceneID == sceneID && scene.kind == .battle && !combat.enemies.isEmpty &&
-                        unique(combat.enemies.map(\.id)) && combat.enemies.count == adventure.enemies.count, "Invalid combat scene/enemies")
+                        combat.enemies.map(\.id) == adventure.enemies.map(\.id), "Invalid combat scene/enemies")
             for enemy in combat.enemies {
                 guard var template = adventure.enemies.first(where: { $0.id == enemy.id }) else {
                     throw RuleViolation.invalidState("Unknown combat enemy")
@@ -99,7 +103,7 @@ public struct GameState: Codable, Equatable {
                 template.health = enemy.health
                 try require(template == enemy, "Changed enemy definition")
             }
-            try require(combat.turnOrder == [.hero(hero.id)] + combat.enemies.map { .enemy($0.id) }
+            try require(combat.turnOrder == [.hero(hero.id)] + adventure.enemies.map { .enemy($0.id) }
                         && combat.turnOrder.indices.contains(combat.turnIndex), "Invalid turn order")
         }
         try require((phase == .completed) == (outcome != nil), "Outcome phase mismatch")
