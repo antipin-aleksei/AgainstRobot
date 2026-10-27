@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @Binding var configuration: AppConfiguration
     @State private var session = MockAdventureSession()
+    @State private var demoSession = MockAdventureSession()
     @State private var path: [AppRoute] = []
 
     var body: some View {
@@ -34,8 +35,8 @@ struct HomeView: View {
                         Text("Вы ещё не начали приключение.").foregroundStyle(.secondary)
                     }
                     Button {
-                        session.openDemoHistory()
-                        path = [.game]
+                        demoSession.openDemoHistory()
+                        path = [.demoHistory]
                     } label: {
                         Label("Лесная станция · пример истории", systemImage: "book.closed")
                     }
@@ -70,6 +71,8 @@ struct HomeView: View {
                     }
                 case .game:
                     GameView(session: session) { path = [] }
+                case .demoHistory:
+                    GameView(session: demoSession) { path = [] }
                 }
             }
         }
