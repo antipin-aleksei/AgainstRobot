@@ -47,6 +47,8 @@ final class AgainstRobotUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Ася"].exists)
         XCTAssertTrue(app.staticTexts["Следопыт"].exists)
         XCTAssertTrue(app.staticTexts["Луна"].exists)
+        XCTAssertEqual(app.staticTexts["hero.health"].label, "Здоровье: 10/10")
+        XCTAssertTrue(app.staticTexts["Фонарь ×1"].exists)
         capture(app, "03-selected-hero-sheet")
         app.buttons["hero.close"].tap()
         app.buttons["game.home"].tap()

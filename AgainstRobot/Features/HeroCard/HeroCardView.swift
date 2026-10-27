@@ -17,7 +17,21 @@ struct HeroCardView: View {
                         Text(session.avatar.title).font(.headline)
                         Text(session.hero.detail)
                     }
-                    AdventureNotice(text: "Карточка тестового героя. Характеристики, здоровье и инвентарь появятся вместе с правилами.")
+                    if let state = session.gameState {
+                        AdventureCard {
+                            Text("Здоровье: \(state.hero.health)/\(state.hero.maximumHealth)")
+                                .accessibilityIdentifier("hero.health")
+                            Text("Сила: \(state.hero.abilities.might) · Ловкость: \(state.hero.abilities.agility) · Чутьё: \(state.hero.abilities.insight)")
+                            Text("Защита: \(state.hero.defense) · Атака: +\(state.hero.attackBonus) · Урон: \(state.hero.damage)")
+                            Text("Инвентарь").font(.headline)
+                            ForEach(state.hero.inventory, id: \.itemID) { stack in
+                                if let item = state.adventure.items.first(where: { $0.id == stack.itemID }) {
+                                    Text("\(item.name) ×\(stack.quantity)")
+                                }
+                            }
+                        }
+                    }
+                    AdventureNotice(text: "Упрощённые правила прототипа. Бросок в чате — фиксированный пример; боевой цикл появится позже.")
                 }
                 .padding()
             }

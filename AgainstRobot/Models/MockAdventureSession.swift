@@ -1,7 +1,8 @@
 import Foundation
 import Observation
+import AdventureCore
 
-// Presentation fixtures only. Plan-3 introduces authoritative rules and game state.
+// Creation drafts and presentation only. AdventureCore owns the accepted game state.
 enum HeroPreset: String, CaseIterable, Identifiable {
     case guardian, scout
     var id: String { rawValue }
@@ -19,13 +20,6 @@ enum AvatarPreset: String, CaseIterable, Identifiable {
     var symbol: String { self == .fox ? "pawprint.fill" : "moon.stars.fill" }
 }
 
-struct ChatMessage: Identifiable {
-    enum Speaker { case narrator, player }
-    let id = UUID()
-    let speaker: Speaker
-    let text: String
-}
-
 @Observable
 final class MockAdventureSession {
     var name = ""
@@ -33,73 +27,84 @@ final class MockAdventureSession {
     var avatar: AvatarPreset = .fox
     var hint = ""
     private(set) var premiseIndex = 0
-    private(set) var messages: [ChatMessage] = []
-    private(set) var isAwaitingRoll = false
-    private(set) var hasAdventure = false
+    private(set) var gameState: GameState?
+    private(set) var issueMessage: String?
     private(set) var isDemoHistory = false
 
-    var heroName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var messages: [Message] { gameState?.messages ?? [] }
+    var isAwaitingRoll: Bool { gameState?.phase == .awaitingRoll }
+    var hasAdventure: Bool { gameState != nil }
+    var heroName: String { gameState?.hero.name ?? name.trimmingCharacters(in: .whitespacesAndNewlines) }
     var canContinue: Bool { !heroName.isEmpty }
-    var premiseTitle: String {
-        premiseIndex == 0 ? "Маяк в тумане" : "Тайна лесной станции"
-    }
+    var premiseTitle: String { preview.adventure.title }
     var premiseDescription: String {
-        let story = premiseIndex == 0
-            ? "Каждый вечер над бухтой загорается заброшенный маяк. Сегодня его свет остановился на вашем окне. Смотритель исчез, а в порту нашли письмо с просьбой прийти до рассвета.\n\nНа берегу вас ждёт лодка. В её борту спрятан медный ключ, но никто из рыбаков не признаётся, кому она принадлежит. Вы решаете, с кем поговорить и какой дорогой добраться до маяка."
-            : "Старая станция глубоко в лесу подаёт сигналы, хотя поездов здесь не было много лет. Молодой механик просит вас найти источник света и вернуть пропавший журнал.\n\nУ входа видны свежие следы. Можно осмотреть закрытую дверь, расспросить механика или обойти станцию по тропе. Ветер приносит звон колокольчика с пустой платформы."
         let wish = hint.trimmingCharacters(in: .whitespacesAndNewlines)
-        return story + (wish.isEmpty ? "" : "\n\nВаше пожелание: \(wish). Это локальный пример; ИИ пока не обрабатывает пожелания.")
+        return preview.adventure.premise + (wish.isEmpty ? "" : "\n\nВаше пожелание: \(wish). Это локальный пример; ИИ пока не обрабатывает пожелания.")
+    }
+    private var preview: GameState {
+        // Constants are covered by native fixture tests; user input is validated on acceptance.
+        try! AdventureFixtures.newSession(name: "Пример", premiseIndex: premiseIndex)
     }
 
     func reset() {
-        name = ""
-        hero = .guardian
-        avatar = .fox
-        hint = ""
-        premiseIndex = 0
-        messages = []
-        isAwaitingRoll = false
-        hasAdventure = false
-        isDemoHistory = false
+        name = ""; hero = .guardian; avatar = .fox; hint = ""; premiseIndex = 0
+        gameState = nil; issueMessage = nil; isDemoHistory = false
     }
 
     func regeneratePremise() {
+        guard gameState == nil else { return }
         premiseIndex = (premiseIndex + 1) % 2
     }
 
     func beginAdventure() {
-        guard canContinue else { return }
-        hasAdventure = true
-        isDemoHistory = false
-        isAwaitingRoll = false
-        messages = [ChatMessage(speaker: .narrator,
-            text: "\(heroName), перед вами закрытая дверь. Вдалеке слышен колокольчик. Что вы делаете?")]
+        guard canContinue, gameState == nil else { return }
+        do {
+            var state = try AdventureFixtures.newSession(name: name,
+                kind: hero == .guardian ? .guardian : .scout,
+                avatar: avatar == .fox ? .fox : .moon, premiseIndex: premiseIndex)
+            try state.apply(.begin)
+            try state.apply(.narrate(Message(speaker: .narrator,
+                text: "\(state.hero.name), перед вами закрытая дверь. Вдалеке слышен колокольчик. Что вы делаете?")))
+            gameState = state; issueMessage = nil; isDemoHistory = false
+        } catch { issueMessage = "Не удалось начать пример: некорректное состояние." }
     }
 
     func openDemoHistory() {
-        reset()
-        name = "Мира"
-        hero = .scout
-        premiseIndex = 1
+        reset(); name = "Мира"; hero = .scout; premiseIndex = 1
         beginAdventure()
         isDemoHistory = true
-        messages.append(ChatMessage(speaker: .player, text: "Спрашиваю механика о станции."))
-        messages.append(ChatMessage(speaker: .narrator,
-            text: "Механик протягивает фонарь: «Свет появляется у северной двери»."))
+        update { state in
+            try state.apply(.narrate(Message(speaker: .player, text: "Спрашиваю механика о станции.")))
+            try state.apply(.narrate(Message(speaker: .narrator,
+                text: "Механик протягивает фонарь: «Свет появляется у северной двери».")))
+        }
     }
 
     func send(_ text: String) {
         let action = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !action.isEmpty, !isAwaitingRoll else { return }
-        messages.append(ChatMessage(speaker: .player, text: action))
-        messages.append(ChatMessage(speaker: .narrator,
-            text: "Пример ответа мастера: на двери виден старый замок. Попробуйте открыть его — нажмите кнопку тестового броска."))
-        isAwaitingRoll = true
+        guard !action.isEmpty, gameState?.phase == .playing else { return }
+        update { state in
+            try state.apply(.narrate(Message(speaker: .player, text: action)))
+            try state.apply(.narrate(Message(speaker: .narrator,
+                text: "Пример ответа мастера: на двери виден старый замок. Попробуйте открыть его — нажмите кнопку тестового броска.")))
+            try state.apply(.requestCheck(CheckRequest(sceneID: state.sceneID, ability: .agility, difficulty: 12)))
+        }
     }
 
     func roll() {
-        guard isAwaitingRoll else { return }
-        messages.append(ChatMessage(speaker: .narrator, text: "Тестовый бросок: 14. Дверь открыта."))
-        isAwaitingRoll = false
+        guard let request = gameState?.pendingCheck else { return }
+        update { state in
+            // Demonstration input, deliberately fixed. Real random dice belong to plan-7.
+            try state.apply(.resolveCheck(request.id, face: 14, resultID: ID()))
+            try state.apply(.narrate(Message(speaker: .narrator, text: "Тестовый бросок: 14. Дверь открыта.")))
+        }
+    }
+
+    private func update(_ operation: (inout GameState) throws -> Void) {
+        guard var candidate = gameState else { return }
+        do {
+            try operation(&candidate)
+            gameState = candidate; issueMessage = nil
+        } catch { issueMessage = "Действие отклонено правилами. Состояние сохранено." }
     }
 }

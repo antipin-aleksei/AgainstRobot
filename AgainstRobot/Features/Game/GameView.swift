@@ -11,8 +11,11 @@ struct GameView: View {
         VStack(spacing: 0) {
             AdventureNotice(text: session.isDemoHistory
                 ? "Это пример истории. Сохранения появятся позже."
-                : "Локальный пример. Ответы и бросок заранее заданы, правила ещё не подключены.")
+                : "Локальный пример. Ответы и бросок заранее заданы. Бой появится позже.")
                 .padding(.horizontal).padding(.vertical, 8)
+            if let issue = session.issueMessage {
+                AdventureNotice(text: issue).padding(.horizontal)
+            }
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 12) {
