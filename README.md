@@ -71,6 +71,36 @@ xcodebuild -project AgainstRobot.xcodeproj \
 и запись версии Xcode, destination, команд и результатов в [plan-1](vibe/plans/plan-1.md),
 прежде чем снимать блокер.
 
+## CI на облачном Mac
+
+Workflow [.github/workflows/ios-ci.yml](.github/workflows/ios-ci.yml) запускается
+при push в `main`, для pull request и вручную через GitHub Actions → **iOS CI** →
+**Run workflow**. Задание выполняется **только в публичном репозитории**:
+`github.event.repository.private == false`; в приватном оно пропускается.
+Используется стандартный hosted runner `macos-15`, без larger runner и секретов.
+Публикация репозитория и первый реальный запуск — отдельные действия; наличие
+workflow не подтверждает, что они выполнены.
+
+CI явно выбирает Xcode **16.4**, записывает версии инструментов и выбирает
+доступный iPhone-симулятор с runtime того же основного поколения, что и SDK
+(iOS 18 для выбранного Xcode). Затем ожидает загрузку симулятора, выполняет
+Debug `build-for-testing`, два существующих UI smoke-теста через
+`test-without-building` и Release `build`, везде без подписи. Проверка
+`xcresulttool get test-results summary` требует хотя бы одного завершённого
+успешного теста и нуля ошибок; пустой прогон не считается успешным.
+
+Ограничение задания — 30 минут; устаревший запуск той же ветки/PR отменяется.
+Логи, версии, destination, JSON результата и `.xcresult` сохраняются в артефакте
+`ios-diagnostics-<run_id>-<attempt>` на 7 дней, в том числе при ошибке, если файлы
+успели появиться. Внешние actions закреплены полными SHA, токен имеет только
+`contents: read`, credentials после checkout не сохраняются.
+
+**Облачная сборка и тесты пока не подтверждены.** Локальная статическая проверка
+workflow в Linux не заменяет Xcode. В [plan-11](vibe/plans/plan-11.md) нужно
+записать URL запуска, точный commit SHA, версии, destination, число тестов и
+результаты обоих build; до этого [plan-1](vibe/plans/plan-1.md) заблокирован,
+plan-2 не начинается.
+
 ## Режим данных и структура
 
 `AppConfiguration.usesMockData` включён по умолчанию. Переключатель на главной
