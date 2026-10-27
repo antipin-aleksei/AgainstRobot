@@ -31,14 +31,16 @@ final class AgainstRobotUITests: XCTestCase {
         app.launch()
 
         let toggle = app.switches["mockModeToggle"]
+        // SwiftUI exposes the labeled row as a switch containing the actual control.
+        let switchControl = toggle.switches.firstMatch
         XCTAssertEqual(toggle.value as? String, "1")
         XCTAssertTrue(app.staticTexts["Локальный режим. Запросов к API нет."].exists)
 
-        toggle.tap()
+        switchControl.tap()
         XCTAssertEqual(toggle.value as? String, "0")
         XCTAssertTrue(app.staticTexts["Сервис не подключён. Запросов к API нет."].exists)
 
-        toggle.tap()
+        switchControl.tap()
         XCTAssertEqual(toggle.value as? String, "1")
         XCTAssertTrue(app.staticTexts["Локальный режим. Запросов к API нет."].exists)
     }
