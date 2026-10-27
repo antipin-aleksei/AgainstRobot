@@ -102,3 +102,9 @@ Instructions read: Superpowers systematic-debugging, test-driven-development
 (including writing-good-tests), and verification-before-completion from
 `/tmp/againstrobot-superpowers/skills/`. No subagents/worktrees were created;
 this implementation agent performed no push or remote mutation.
+
+## Hosted verification
+
+GREEN: [run 40526374430](https://github.com/antipin-aleksei/AgainstRobot/actions/runs/40526374430), SHA `72464f27732462acb32d86cb7c034447df7d1755`,
+completed success: Debug and Release builds, 2 tests passed/0 failed;
+independent review found no issues. Plan acceptance recorded in vibe/plans/plan-11.md.
