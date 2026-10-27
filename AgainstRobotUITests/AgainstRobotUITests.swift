@@ -30,6 +30,7 @@ final class AgainstRobotUITests: XCTestCase {
         app.buttons["premise.accept"].tap()
 
         XCTAssertTrue(app.navigationBars["Игра"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.navigationBars.buttons["Завязка"].exists, "Starting play must end character creation navigation")
         XCTAssertFalse(app.buttons["game.send"].isEnabled)
         app.textFields["game.input"].tap()
         app.textFields["game.input"].typeText("Осматриваю дверь\n")
@@ -76,6 +77,33 @@ final class AgainstRobotUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Это пример истории. Сохранения появятся позже."].exists)
         capture(app, "05-demo-history")
         app.buttons["game.home"].tap()
+    }
+
+    // Browsing a sample must not overwrite the player's hero, transcript or
+    // unfinished roll. A long action also exercises wrapping in the transcript.
+    func testBrowsingDemoHistoryPreservesCurrentAdventureAndPendingRoll() {
+        let app = XCUIApplication()
+        app.launch()
+        app.buttons["newGame"].tap()
+        app.textFields["character.name"].tap()
+        app.textFields["character.name"].typeText("Лея\n")
+        app.buttons["character.continue"].tap()
+        app.buttons["premise.accept"].tap()
+        let action = "Осматриваю замок, проверяю следы на пороге и прислушиваюсь к шагам за дверью, прежде чем осторожно повернуть найденный медный ключ."
+        app.textFields["game.input"].tap()
+        app.textFields["game.input"].typeText(action + "\n")
+        app.buttons["game.send"].tap()
+        XCTAssertTrue(app.buttons["game.roll"].waitForExistence(timeout: 5))
+        app.buttons["game.home"].tap()
+        app.buttons["history.demo"].tap()
+        XCTAssertTrue(app.staticTexts["Это пример истории. Сохранения появятся позже."].exists)
+        app.buttons["game.home"].tap()
+        app.buttons["resumeGame"].tap()
+        XCTAssertTrue(app.staticTexts[action].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["game.roll"].exists)
+        capture(app, "06-active-adventure-preserved-after-history")
+        app.buttons["game.hero"].tap()
+        XCTAssertTrue(app.staticTexts["Лея"].waitForExistence(timeout: 5))
     }
 
     private func capture(_ app: XCUIApplication, _ name: String) {
