@@ -1,0 +1,28 @@
+# Xcode user state and local build outputs
+.DS_Store
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+*.xcresult/
+*.ipa
+*.dSYM/
+*.dSYM.zip
+
+# Optional future SwiftPM build artifacts
+.build/
+.swiftpm/
+
+# Local configuration and signing material; never commit credentials
+.env
+.env.*
+!.env.example
+Secrets.xcconfig
+*.local.xcconfig
+*.p12
+*.p8
+*.mobileprovision
+*.pem
+*.key
