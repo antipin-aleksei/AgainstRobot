@@ -78,7 +78,7 @@ public struct Message: Codable, Equatable, Identifiable {
     public let id: ID<Message>
     public let speaker: Speaker
     public let text: String
-    public init(id: ID<Message> = ID(), speaker: Speaker, text: String) {
+    public init(id: AdventureCore.ID<Message> = ID(), speaker: Speaker, text: String) {
         self.id = id; self.speaker = speaker; self.text = text
     }
 }
@@ -87,7 +87,7 @@ public struct CheckRequest: Codable, Equatable, Identifiable {
     public let sceneID: ID<Scene>
     public let ability: Ability
     public let difficulty: Int
-    public init(id: ID<CheckRequest> = ID(), sceneID: ID<Scene>, ability: Ability, difficulty: Int) {
+    public init(id: AdventureCore.ID<CheckRequest> = ID(), sceneID: AdventureCore.ID<Scene>, ability: Ability, difficulty: Int) {
         self.id = id; self.sceneID = sceneID; self.ability = ability; self.difficulty = difficulty
     }
 }
