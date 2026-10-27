@@ -140,6 +140,16 @@ jobs:
             CODE_SIGNING_ALLOWED=NO build \
             2>&1 | tee build/ci/release-build.log
 
+      - name: Export UI screenshot attachments
+        if: always()
+        run: |
+          set -euo pipefail
+          if [[ -d build/ci/SmokeTests.xcresult ]]; then
+            xcrun xcresulttool export attachments \
+              --path build/ci/SmokeTests.xcresult \
+              --output-path build/ci/attachments
+          fi
+
       - name: Upload build and test diagnostics
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
