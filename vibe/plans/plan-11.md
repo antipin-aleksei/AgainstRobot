@@ -15,7 +15,7 @@ plan-1 → plan-2 → … → plan-10; plan-2 пока не начинать.
 Нужны подготовленный каркас plan-1, право пользователя на публикацию репозитория
 и доступ к GitHub Actions. Пользователь запросил публичный репозиторий и запуск
 CI. macOS job выполняется только при `github.event.repository.private == false`,
-на стандартном `macos-15`. Приватный macOS runner, larger runners, платные
+на стандартном `macos-15-intel`. Приватный macOS runner, larger runners, платные
 сервисы, signing и развёртывание не входят в объём.
 
 ## Реализация
@@ -25,7 +25,7 @@ CI. macOS job выполняется только при `github.event.repositor
 2. Добавить workflow на push `main`, pull request и `workflow_dispatch`, с
    `contents: read`, закреплёнными SHA actions, отменой устаревших прогонов и
    лимитом 30 минут.
-3. Выбрать Xcode 16.4 из образа `macos-15`; записать реальные версии. Через
+3. Выбрать Xcode 16.4 из образа `macos-15-intel`; записать реальные версии. Через
    `simctl` JSON выбрать доступный iPhone/runtime того же поколения, что и SDK,
    дождаться готовности загрузки.
 4. Выполнить unsigned Debug `build-for-testing`, существующие UI smoke-тесты
@@ -46,7 +46,7 @@ commit SHA, который принимается: Debug и Release собран
 
 ## Текущий отчёт
 
-Workflow и инструкции подготовлены. Официальный список ПО `macos-15` проверен:
+Workflow и инструкции подготовлены. Официальный список ПО `macos-15-intel` проверен:
 он содержит `/Applications/Xcode_16.4.app`, iOS Simulator SDK 18.5 и runtimes
 iOS 18.5/18.6. Выбор доступного устройства выполняется на каждом runner заново.
 SHA checkout v6 и upload-artifact v6 сверены с официальными Git refs.
@@ -73,3 +73,19 @@ GitHub API уже доступен. Но скачивание логов и ар
 публикация окружения пользователем. После применения скачать диагностику,
 установить причину ошибки, исправить и повторить CI. До успешного прогона
 plan-11 и plan-1 остаются заблокированы; plan-2 не начат.
+
+### Выбор Intel runner — 2026-10-27
+
+После пяти минут в очереди ARM и сообщения GitHub о нехватке доступных
+macOS arm64 runner выбран стандартный публичный `macos-15-intel`.
+[Официальная таблица GitHub](https://github.com/github/docs/blob/main/data/reusables/actions/supported-github-runners.md)
+указывает эту метку для Intel; `macos-15` теперь соответствует arm64.
+[Список ПО Intel-образа](https://github.com/actions/runner-images/blob/main/images/macos/macos-15-Readme.md)
+подтверждает Xcode 16.4 по прежнему пути и iOS Simulator SDK 18.5.
+Оба источника проверены 2026-10-27. Условие публичной видимости, выбор доступного
+симулятора, сборки и все UI-тесты сохранены. Метка снижает зависимость от
+очереди ARM, но не гарантирует доступность Intel или успешное выполнение.
+Реальный прогон на Intel ещё не подтверждён; блокеры приёмки остаются.
+После смены метки `/tmp/againstrobot-actionlint/actionlint -color
+.github/workflows/ios-ci.yml` (1.7.12) завершился с кодом 0 без замечаний;
+`git diff --check` также завершился с кодом 0. Это статические проверки.

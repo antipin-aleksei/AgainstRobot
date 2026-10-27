@@ -77,7 +77,7 @@ Workflow [.github/workflows/ios-ci.yml](.github/workflows/ios-ci.yml) запус
 при push в `main`, для pull request и вручную через GitHub Actions → **iOS CI** →
 **Run workflow**. Задание выполняется **только в публичном репозитории**:
 `github.event.repository.private == false`; в приватном оно пропускается.
-Используется стандартный hosted runner `macos-15`, без larger runner и секретов.
+Используется стандартный hosted runner `macos-15-intel`, без larger runner и секретов.
 Публикация репозитория и первый реальный запуск — отдельные действия; наличие
 workflow не подтверждает, что они выполнены.
 

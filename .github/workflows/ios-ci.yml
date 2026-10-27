@@ -17,7 +17,7 @@ jobs:
   build-and-test:
     # Standard hosted macOS is free for public repositories. Never run privately.
     if: github.event.repository.private == false
-    runs-on: macos-15
+    runs-on: macos-15-intel
     timeout-minutes: 30
     env:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
